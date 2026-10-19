@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#c8102e">
+<title>Auto Viação Jabour – Gestão de Frota e Operações</title>
+<link rel="stylesheet" href="css/style.css"></head><body>
+<header><img src="assets/logo.png" alt="Auto Viação Jabour" class="logo"><div><h1>Auto Viação Jabour</h1><small>Sistema de Gestão de Frota e Operações</small></div></header>
+<main>
+<div class="tabs"><button data-t="dash" class="on" onclick="tab('dash')">Dashboard</button><button data-t="fro" onclick="tab('fro')">Frota</button><button data-t="lin" onclick="tab('lin')">Linhas e Percurso</button><button data-t="mon" onclick="tab('mon')">Monitoramento</button><button data-t="gar" onclick="tab('gar')">Garagens</button><button data-t="man" onclick="tab('man')">Manutenções</button><button data-t="pax" onclick="tab('pax')">Passageiros e Receita</button><button data-t="val" onclick="tab('val')">Valores por Modelo</button><button data-t="imp" onclick="tab('imp')">Importar</button></div>
+<section class="tab on" id="t-dash"><h2>Dashboard</h2>
+<div class="grid" id="kpis"></div>
+<div class="grid" id="models"></div>
+<h2>Divisão por Garagem</h2><div class="grid" id="gdash"></div>
+
+</section><section class="tab" id="t-imp"><h2>Importar dados e conectar planilhas</h2>
+<div class="card"><p class="mut">Conecte cada base a uma planilha do Google Sheets (compartilhada como “qualquer pessoa com o link” – leitor) ou a um link CSV publicado. Também aceita arquivo .csv/.xlsx ou dados colados. A primeira linha pode ser o cabeçalho. Cada base também pode ser baixada como planilha .xlsx com o mesmo visual do sistema (suba no Google Drive para abrir como Google Sheets).</p>
+<div class="bar"><label class="mut"><input type="checkbox" id="autoSync" onchange="setAuto()"> Atualizar automaticamente ao abrir o sistema</label><button onclick="syncAll()">⟳ Atualizar todas as planilhas conectadas</button><button onclick="xlTudo()">⬇ Exportar tudo (.xlsx, uma aba por base)</button></div><p id="msg" class="mut"></p></div>
+<div id="fontes" style="margin-top:12px"></div>
+<h2>Backup e transferência entre aparelhos</h2><div class="card"><p class="mut">Os dados ficam salvos no navegador de cada aparelho. Para levar para outro celular ou computador, exporte o backup e importe lá.</p><div class="bar"><button onclick="expBackup()">⬇ Exportar backup (JSON)</button><label class="mut">Importar backup: <input type="file" accept=".json,application/json" onchange="impBackup(event)"></label></div></div>
+</section><section class="tab" id="t-fro"><h2>Gestão de Frota</h2>
+<div class="bar"><input id="q" placeholder="Buscar prefixo, placa, modelo, linha…" oninput="rF()" style="min-width:240px">
+<select id="fc" onchange="rF()"><option value="">Todas categorias</option><option>Micro</option><option>Urbano</option><option>Executivo</option></select>
+<select id="fl" onchange="rF()"></select><select id="fo" onchange="rF()"><option value="linha">Ordenar: Linha</option><option value="prefixo">Ordenar: Prefixo</option><option value="status">Ordenar: Status</option><option value="modelo">Ordenar: Modelo</option></select><select id="fg" onchange="rF()"></select><select id="fm" onchange="rF()"><option value="">Todos modelos</option></select>
+<select id="fs" onchange="rF()"><option value="">Todos status</option><option>Operando</option><option>Manutenção</option><option>Reserva</option></select>
+<button onclick="openB()">+ Adicionar ônibus comprado</button><span class="mut" id="cnt"></span><button onclick="expF()">⬇ Exportar frota</button><button onclick="xl('frota')">⬇ Planilha formatada (.xlsx)</button></div>
+<div class="tw"><table><thead><tr><th>Prefixo</th><th>Categoria</th><th>Modelo</th><th>Placa</th><th>Ano</th><th>Cap.</th><th>Linha</th><th>Garagem</th><th>Motorista</th><th>Status</th><th>Valor</th><th>Ações</th></tr></thead><tbody id="tf"></tbody></table></div>
+
+<h2>Veículos de Apoio</h2><div class="grid" id="apK"></div>
+<div class="bar"><input id="apq" placeholder="Buscar identificação, placa, modelo, motorista…" oninput="rApoio()" style="min-width:240px"><select id="apf" onchange="rApoio()"><option value="">Todos os tipos</option><option>Carro</option><option>Guincho</option><option>Van</option><option>Outros</option></select><select id="aps" onchange="rApoio()"><option value="">Todos status</option><option>Operando</option><option>Manutenção</option><option>Reserva</option></select><button onclick="openA(null)">+ Adicionar veículo de apoio</button><button onclick="xl('apoio')">⬇ Planilha formatada (.xlsx)</button></div>
+<div class="tw"><table><thead><tr><th>Identificação</th><th>Tipo</th><th>Modelo</th><th>Placa</th><th>Ano</th><th>Garagem</th><th>Motorista</th><th>Status</th><th>Valor</th><th>Ações</th></tr></thead><tbody id="tap"></tbody></table></div>
+</section><section class="tab" id="t-lin"><h2>Linhas e Calculadora de Percurso</h2>
+<div class="bar"><label for="vel"><b>Velocidade Programada (km/h):</b></label><input id="vel" type="number" min="1" step="0.5" value="20" style="width:90px" oninput="rL()"><label>Paradas por sentido <input id="pq" type="number" min="0" value="0" style="width:70px" oninput="rL()"></label><label>Tempo por parada (min) <input id="pt" type="number" min="0" step="0.5" value="0" style="width:70px" oninput="rL()"></label><button class="g" onclick="restL()">Restaurar linhas do cadastro</button><button onclick="expL()">⬇ Exportar linhas (Ida e Volta)</button><button onclick="xl('linhas')">⬇ Planilha formatada (.xlsx)</button></div>
+<div class="bar"><input id="nl" placeholder="Linha" style="width:80px"><input id="no" placeholder="Origem"><input id="nvia" placeholder="Via"><input id="nd" placeholder="Destino"><input id="ni" placeholder="KM Ida" style="width:80px"><input id="nv" placeholder="KM Volta (vazio=circular)" style="width:160px"><button onclick="addL()">+ Adicionar linha</button></div>
+<div class="bar"><b>Filtrar:</b><input id="lq" placeholder="Buscar linha, origem, via, destino…" oninput="rL()" style="min-width:240px"><select id="lo" onchange="rL()"></select><select id="ld" onchange="rL()"></select><select id="lt2" onchange="rL()"><option value="">Todos os tipos</option><option value="n">Normais (ida e volta)</option><option value="c">Circulares</option></select><select id="lf" onchange="rL()"><option value="">Com e sem ônibus</option><option value="c">Só com ônibus</option><option value="s">Sem ônibus</option></select><select id="ls" onchange="rL()"><option value="linha">Ordenar: Linha</option><option value="km">Ordenar: Total KM</option><option value="frota">Ordenar: Nº de ônibus</option><option value="cad">Ordem do cadastro</option></select><button class="g" onclick="limpL()">Limpar filtros</button><span class="mut" id="lcnt"></span></div>
+<div class="tw"><table><thead><tr><th>Linha</th><th>Origem</th><th>Via</th><th>Destino</th><th>KM Ida</th><th>KM Volta</th><th>Total KM</th><th>Paradas/sentido</th><th>Tempo Ida</th><th>Tempo Volta</th><th>Tempo Total</th><th>Tempo parado</th><th>Vel. comercial</th><th>Intervalo (min)</th><th>Ideal (ônibus)</th><th>Ônibus</th><th></th></tr></thead><tbody id="tl"></tbody></table></div>
+</section>
+<section class="tab" id="t-mon"><h2>Monitoramento da Operação</h2><div class="bar"><b>Filtrar por linha:</b><select id="mln" onchange="rM();rB()"></select></div><div class="grid" id="mk"></div><div class="card" id="alerts" style="margin-bottom:12px"></div>
+<div class="tw"><table><thead><tr><th>Linha</th><th>Intervalo (min)</th><th>Ideal</th><th>Total</th><th>Operando</th><th>Manutenção</th><th>Reserva</th><th>Capacidade operando</th><th>% do ideal</th><th>Ajuste</th></tr></thead><tbody id="tm"></tbody></table></div>
+<h2>Monitor por ônibus (ao vivo)</h2><div class="bar"><input id="mq" placeholder="Prefixo, placa, linha, motorista…" oninput="rB()"><datalist id="dmot"></datalist><select id="mst" onchange="rB()"><option value="">Todos status</option><option>Operando</option><option>Manutenção</option><option>Reserva</option></select><span class="mut" id="mtime"></span></div>
+<div class="tw"><table><thead><tr><th>Prefixo</th><th>Modelo</th><th>Linha</th><th>Status</th><th>Motorista</th><th>Alterar status</th><th>Retirar / Colocar</th></tr></thead><tbody id="tb"></tbody></table></div>
+<h2>Registro de alterações</h2><div class="tw"><table><thead><tr><th>Hora</th><th>Alteração</th></tr></thead><tbody id="tlg"></tbody></table></div>
+<h2>Ônibus em manutenção</h2><div class="tw"><table><thead><tr><th>Prefixo</th><th>Modelo</th><th>Linha</th><th></th></tr></thead><tbody id="tmn"></tbody></table></div></section>
+<section class="tab" id="t-gar"><h2>Garagens e Divisão da Frota</h2><div class="grid" id="gk"></div>
+<div id="gcards" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"></div>
+<h2>Distribuir ônibus entre as garagens</h2>
+<div class="card" style="display:grid;gap:10px"><div class="bar"><b>Por linha</b><input id="gl" list="dgl" placeholder="Linha" style="width:110px"><datalist id="dgl"></datalist><select id="gg1"></select><button onclick="gLinha()">Atribuir todos da linha</button></div>
+<div class="bar"><b>Por modelo</b><select id="gmo"></select><select id="gg2"></select><button onclick="gModelo()">Atribuir todos do modelo</button></div>
+<div class="bar"><b>Todos sem garagem</b><select id="gg3"></select><button onclick="gSem()">Atribuir</button><button class="g" onclick="gLimpar()">Remover todas as atribuições</button></div>
+<span class="mut">Para mover um ônibus individual, use Editar na aba Frota.</span></div>
+<h2>Ônibus por garagem</h2><div class="tw"><table><thead><tr><th>Garagem</th><th>Total</th><th>Micro</th><th>Urbano</th><th>Executivo</th><th>Operando</th><th>Manutenção</th><th>Reserva</th><th>Valor da frota</th></tr></thead><tbody id="tg"></tbody></table></div>
+<h2>Ônibus nas garagens</h2><div class="bar"><input id="gq" placeholder="Buscar prefixo…" oninput="rGB()"><select id="gfl" onchange="rGB()"></select><select id="gfg" onchange="rGB()"></select><span class="mut" id="gcn"></span></div>
+<div class="tw"><table><thead><tr><th>Prefixo</th><th>Modelo</th><th>Linha</th><th>Status</th><th>Garagem</th></tr></thead><tbody id="tgb"></tbody></table></div></section>
+<section class="tab" id="t-man"><h2>Manutenções</h2><div class="grid" id="manK"></div>
+<div class="card"><div class="bar"><input id="mp" list="dp" placeholder="Prefixo (ônibus ou apoio)" style="width:170px"><datalist id="dp"></datalist>
+<select id="mtp" title="Motivo"><option>Quebra</option><option>Acidente</option><option>Preventiva</option><option>Revisão</option><option>Outros</option></select>
+<select id="mse" title="Setor"><option>Mecânica</option><option>Elétrica</option><option>Borracharia</option><option>Pintura</option><option>Outros</option></select>
+<input id="mdt" type="date"><input id="mds" placeholder="Descrição / serviço" style="min-width:200px"><input id="mcu" type="number" min="0" step="0.01" placeholder="Custo (R$)" style="width:120px"><button onclick="addM()">+ Abrir manutenção</button></div>
+<span class="mut">Escolha o motivo (Quebra, Acidente…) e o setor (Mecânica, Elétrica, Borracharia, Pintura). Ao abrir, o veículo vai para “Manutenção”; ao concluir, volta ao status anterior. Um veículo pode ter mais de um setor aberto ao mesmo tempo.</span></div>
+<h2>Resumo por setor</h2><div class="tw"><table><thead><tr><th>Setor</th><th>Abertas</th><th>Concluídas</th><th>Custo</th></tr></thead><tbody id="msetor"></tbody></table></div>
+<h2>Resumo por motivo</h2><div class="tw"><table><thead><tr><th>Motivo</th><th>Abertas</th><th>Concluídas</th><th>Custo</th></tr></thead><tbody id="mmotivo"></tbody></table></div>
+<h2>Registros</h2><div class="bar"><input id="mfq" placeholder="Buscar prefixo ou descrição…" oninput="rMan()"><select id="mfs" onchange="rMan()"><option value="">Todas as situações</option><option>Aberta</option><option>Concluída</option></select><select id="mfm" onchange="rMan()"><option value="">Todos os motivos</option><option>Quebra</option><option>Acidente</option><option>Preventiva</option><option>Revisão</option><option>Outros</option></select><select id="mfo" onchange="rMan()"><option value="">Todos os setores</option><option>Mecânica</option><option>Elétrica</option><option>Borracharia</option><option>Pintura</option><option>Outros</option></select><button onclick="expM()">⬇ Exportar CSV</button><button onclick="xl('manut')">⬇ Planilha formatada (.xlsx)</button></div>
+<div class="tw"><table><thead><tr><th>Prefixo</th><th>Veículo</th><th>Modelo</th><th>Linha / Tipo</th><th>Motivo</th><th>Setor</th><th>Data</th><th>Descrição</th><th>Custo</th><th>Situação</th><th></th></tr></thead><tbody id="tmt"></tbody></table></div></section>
+<section class="tab" id="t-pax"><h2>Passageiros e Receita de Passagens</h2><div class="grid" id="pxK"></div>
+<div class="card"><div class="bar"><label>Tarifa (R$) <input id="trf" type="number" min="0" step="0.01" style="width:90px" oninput="setT()"></label><span class="mut">Receita = pagantes × tarifa (pode ser trocada em cada lançamento).</span></div>
+<div class="bar"><input id="pdt" type="date"><input id="pln" list="dlp" placeholder="Linha" style="width:100px"><datalist id="dlp"></datalist><input id="ppg" type="number" min="0" placeholder="Pagantes" style="width:110px"><input id="pgr" type="number" min="0" placeholder="Gratuidades" style="width:110px"><input id="ptf" type="number" min="0" step="0.01" placeholder="Tarifa (opcional)" style="width:140px"><input id="pvg" type="number" min="0" placeholder="Viagens (ida+volta)" style="width:150px"><button onclick="addP()">+ Lançar dia</button></div>
+<p class="mut">Ou cole vários dias: Data · Linha · Pagantes · Gratuidades · Viagens (TAB ou ;)</p><textarea id="inP" placeholder="18/10/2026&#9;802&#9;1250&#9;310"></textarea><div class="bar" style="margin-top:8px"><button onclick="impP()">Importar lançamentos</button><button onclick="expP()">⬇ Exportar passageiros</button><button onclick="xl('pax')">⬇ Planilha formatada (.xlsx)</button></div></div>
+<h2>Cálculo de Subsídio</h2>
+<div class="card"><div class="bar"><label>Subsídio por passageiro pagante (R$) <input id="sbp" type="number" min="0" step="0.01" style="width:100px" oninput="setSub()"></label><label>Subsídio por gratuidade (R$) <input id="sbg" type="number" min="0" step="0.01" style="width:100px" oninput="setSub()"></label><label>Custo operacional por km (R$) <input id="sbk" type="number" min="0" step="0.01" style="width:100px" oninput="setSub()"></label><button onclick="expS()">⬇ Exportar subsídio por linha</button></div>
+<span class="mut">Subsídio por passageiros = pagantes × valor + gratuidades × valor. Km rodados = viagens (ida+volta) × km da linha. Custo = km × custo/km. Déficit = custo − receita; subsídio necessário = déficit (se positivo).</span></div>
+<div class="grid" id="sbK" style="margin-top:10px"></div>
+<div class="tw"><table><thead><tr><th>Linha</th><th>Km rodados</th><th>IPK</th><th>Receita</th><th>Custo estimado</th><th>Subsídio por passageiros</th><th>Déficit</th><th>Subsídio necessário</th></tr></thead><tbody id="tsl"></tbody></table></div>
+<h2>Resumo por dia</h2><div class="tw"><table><thead><tr><th>Data</th><th>Pagantes</th><th>Gratuidades</th><th>Total</th><th>Receita</th></tr></thead><tbody id="tpd"></tbody></table></div>
+<h2>Resumo por linha</h2><div class="tw"><table><thead><tr><th>Linha</th><th>Dias</th><th>Pagantes</th><th>Gratuidades</th><th>Total</th><th>Média/dia</th><th>Receita</th></tr></thead><tbody id="tpl"></tbody></table></div>
+<h2>Lançamentos</h2><div class="tw"><table><thead><tr><th>Data</th><th>Linha</th><th>Pagantes</th><th>Gratuidades</th><th>Tarifa</th><th>Receita</th><th></th></tr></thead><tbody id="tpx"></tbody></table></div></section>
+<section class="tab" id="t-val"><h2>Painel de Valores por Modelo</h2>
+<div class="bar"><b>Reajuste geral (%)</b><input id="pc" type="number" step="0.5" value="0" style="width:90px"><button onclick="reaj()">Aplicar a todos</button><span class="mut">Edite o valor unitário de cada modelo/ano: o total e o Dashboard recalculam.</span></div>
+<div class="grid" id="vk"></div>
+<div class="tw"><table><thead><tr><th>Modelo</th><th>Ano</th><th>Categoria</th><th>Qtd</th><th>Valor unitário (R$)</th><th>Total</th></tr></thead><tbody id="tv"></tbody></table></div></section>
+</main>
+
+<div id="modalM"><div class="card"><h3 style="margin:0" id="emt"></h3>
+<label>Motivo<select id="emo"><option>Quebra</option><option>Acidente</option><option>Preventiva</option><option>Revisão</option><option>Outros</option></select></label>
+<label>Setor<select id="ese"><option>Mecânica</option><option>Elétrica</option><option>Borracharia</option><option>Pintura</option><option>Outros</option></select></label>
+<label>Data<input id="edt" type="date"></label><label>Descrição<input id="eds"></label><label>Custo (R$)<input id="ecu" type="number" min="0" step="0.01"></label>
+<div class="bar"><button onclick="salvarEM()">Salvar</button><button class="g" onclick="fecharEM()">Cancelar</button></div></div></div>
+<div id="modalA"><div class="card"><h3 style="margin:0" id="at"></h3>
+<label>Identificação (prefixo ou placa)<input id="ap"></label><label>Tipo<select id="aty"><option>Carro</option><option>Guincho</option><option>Van</option><option>Outros</option></select></label>
+<label>Modelo<input id="amo"></label><label>Placa<input id="apl"></label><label>Ano<input id="aan" type="number"></label><label>Garagem<select id="ag"></select></label>
+<label>Motorista<input id="amt" list="dmot"></label><label>Status<select id="ast"><option>Operando</option><option>Manutenção</option><option>Reserva</option></select></label>
+<label>Valor (R$)<input id="ava" type="number" min="0" step="1000"></label><label>Observação<input id="aob"></label>
+<div class="bar"><button onclick="salvarA()">Salvar</button><button class="g" onclick="fecharA()">Cancelar</button></div></div></div>
+<div id="modalB"><div class="card"><h3 style="margin:0">Adicionar ônibus comprado</h3>
+<label>Prefixo<input id="bp" placeholder="Ex.: D86900" style="width:100%"></label><label>Modelo<input id="bm" list="dm" style="width:100%" oninput="bAuto()"></label>
+<label>Categoria<select id="bc" style="width:100%"><option>Micro</option><option>Urbano</option><option>Executivo</option></select></label>
+<label>Placa<input id="bpl" style="width:100%"></label><label>Ano<input id="ba" type="number" style="width:100%" oninput="bAuto()"></label><label>Capacidade (passageiros)<input id="bcap" type="number" style="width:100%"></label>
+<label>Valor de compra (R$)<input id="bv" type="number" min="0" step="1000" style="width:100%" oninput="this.dataset.auto='0'"></label><label>Data da compra<input id="bdt" type="date" style="width:100%"></label>
+<label>Linha (vazio = reserva)<input id="bl" list="dl" style="width:100%"></label><label>Garagem<select id="bg" style="width:100%"></select></label>
+<label>Status<select id="bs" style="width:100%"><option>Reserva</option><option>Operando</option><option>Manutenção</option></select></label><label>Motorista<input id="bmo" list="dmot" style="width:100%"></label>
+<div class="bar"><button onclick="salvarB()">Adicionar à frota</button><button class="g" onclick="fecharB()">Cancelar</button></div></div></div>
+<div id="modalL"><div class="card"><h3 style="margin:0" id="lt"></h3>
+<label>Nº da linha<input id="el" style="width:100%"></label><label>Ida (origem)<input id="eo" style="width:100%"></label><label>Via<input id="ev" style="width:100%"></label><label>Destino<input id="ed" style="width:100%"></label>
+<label>KM Ida<input id="ei" type="number" step="0.1" min="0" style="width:100%"></label><label>KM Volta<input id="eb" type="number" step="0.1" min="0" style="width:100%"></label>
+<label><input id="ec" type="checkbox"> Linha circular (sem KM de volta)</label>
+<div class="bar"><button onclick="salvarL()">Salvar</button><button class="g" onclick="fecharL()">Cancelar</button></div></div></div>
+<div id="modal"><div class="card"><h3 style="margin:0" id="mt"></h3>
+<label>Modelo<input id="mm" list="dm" style="width:100%" oninput="catAuto()"></label><datalist id="dm"></datalist>
+<label>Categoria<select id="mc" style="width:100%"><option>Micro</option><option>Urbano</option><option>Executivo</option></select></label>
+<label>Motorista<input id="mmo" list="dmot" style="width:100%"></label>
+<label>Garagem<select id="mg" style="width:100%"></select></label>
+<label>Linha<input id="ml" list="dl" style="width:100%"></label><datalist id="dl"></datalist>
+<label>Status operacional<select id="ms" style="width:100%"><option>Operando</option><option>Manutenção</option><option>Reserva</option></select></label>
+<div class="bar"><button onclick="salvar()">Salvar</button><button class="g" onclick="fechar()">Cancelar</button></div></div></div>
+
+<script src="js/app.js" defer></script></body></html>
