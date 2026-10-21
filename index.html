@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #eef1f6; display: flex;
+           justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .caixa { background: #fff; padding: 28px; border-radius: 12px; width: 320px;
+             box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+    h1 { margin: 0 0 16px; font-size: 22px; text-align: center; }
+    .abas { display: flex; gap: 8px; margin-bottom: 16px; }
+    .abas button { flex: 1; padding: 8px; border: 1px solid #0b3d91; background: #fff;
+                   color: #0b3d91; border-radius: 6px; cursor: pointer; }
+    .abas button.ativa { background: #0b3d91; color: #fff; }
+    input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc;
+            border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+    .enviar { width: 100%; padding: 11px; background: #c8102e; color: #fff; border: 0;
+              border-radius: 6px; font-size: 16px; cursor: pointer; }
+    #mensagem { margin-top: 12px; text-align: center; font-size: 14px; min-height: 18px; }
+    .erro { color: #c8102e; } .certo { color: #16803c; }
+    .oculto { display: none; }
+  </style>
+</head>
+<body>
+  <div class="caixa">
+
+    <!-- TELA DE LOGIN / CRIAR CONTA -->
+    <div id="telaLogin">
+      <h1>Bem-vindo</h1>
+      <div class="abas">
+        <button id="abaEntrar" class="ativa" onclick="mudarModo('entrar')">Entrar</button>
+        <button id="abaCriar" onclick="mudarModo('criar')">Criar Conta</button>
+      </div>
+      <input id="email" type="email" placeholder="Seu e-mail">
+      <input id="senha" type="password" placeholder="Sua senha">
+      <input id="senha2" class="oculto" type="password" placeholder="Repita a senha">
+      <button id="botao" class="enviar" onclick="enviar()">Entrar</button>
+    </div>
+
+    <!-- TELA DEPOIS DE ENTRAR -->
+    <div id="telaBemVindo" class="oculto">
+      <h1>Olá!</h1>
+      <p id="quemEntrou" style="text-align:center"></p>
+      <button class="enviar" onclick="sair()">Sair</button>
+    </div>
+
+    <div id="mensagem"></div>
+  </div>
+
+<script>
+  let modo = "entrar";               // "entrar" ou "criar"
+  const $ = (id) => document.getElementById(id);
+
+  function mostrar(texto, tipo) {
+    $("mensagem").textContent = texto;
+    $("mensagem").className = tipo;  // "erro" ou "certo"
+  }
+
+  function mudarModo(novo) {
+    modo = novo;
+    $("abaEntrar").className = novo === "entrar" ? "ativa" : "";
+    $("abaCriar").className  = novo === "criar"  ? "ativa" : "";
+    $("senha2").className = novo === "criar" ? "" : "oculto";
+    $("botao").textContent = novo === "criar" ? "Criar Conta" : "Entrar";
+    mostrar("", "");
+  }
+
+  // Esta é a CONEXÃO: manda e-mail e senha para o servidor (servidor.py)
+  async function enviar() {
+    const email = $("email").value;
+    const senha = $("senha").value;
+
+    if (modo === "criar" && senha !== $("senha2").value) {
+      return mostrar("As senhas não são iguais.", "erro");
+    }
+
+    const rota = modo === "criar" ? "/api/criar-conta" : "/api/entrar";
+    try {
+      const resposta = await fetch(rota, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, senha: senha })
+      });
+      const dados = await resposta.json();
+
+      if (!dados.ok) return mostrar(dados.mensagem, "erro");
+
+      if (modo === "criar") {
+        mudarModo("entrar");
+        $("senha").value = "";
+        mostrar(dados.mensagem, "certo");
+      } else {
+        $("quemEntrou").textContent = "Você entrou como " + dados.email;
+        $("telaLogin").className = "oculto";
+        $("telaBemVindo").className = "";
+        mostrar("", "");
+      }
+    } catch (erro) {
+      mostrar("Não consegui falar com o servidor. Ele está rodando?", "erro");
+    }
+  }
+
+  function sair() {
+    $("senha").value = "";
+    $("telaBemVindo").className = "oculto";
+    $("telaLogin").className = "";
+  }
+</script>
+</body>
+</html>
